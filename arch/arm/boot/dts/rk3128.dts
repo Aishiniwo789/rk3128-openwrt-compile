@@ -1,0 +1,32 @@
+/dts-v1/;
+#include "rk3128.dtsi"
+/ {
+    model = "TXCZ-RK3128-V3.1";
+    compatible = "txcz,rk3128-v31", "rockchip,rk3128";
+    memory@60000000 {
+        device_type = "memory";
+        reg = <0x60000000 0x10000000>; // 256M RAM
+    };
+    aliases {
+        ethernet0 = &emac;
+        serial0 = &uart2;
+    };
+};
+&emac {
+    status = "okay";
+    phy-mode = "rmii";
+    phy-handle = <&phy0>;
+};
+&phy0 {
+    reg = <0>;
+    compatible = "ethernet-phy-ieee802.3-c22";
+};
+&uart2 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart2_xfer>;
+};
+&usb0 {
+    status = "okay";
+    dr_mode = "host";
+};

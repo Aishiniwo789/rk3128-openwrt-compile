@@ -1,0 +1,90 @@
+name: RK3128 OpenWrt Compile
+on:
+  workflow_dispatch:
+    inputs:
+      BOARD:
+        description: '芯片型号'
+        required: true
+        default: 'rk3128'
+      KERNEL_VERSION:
+        description: '内核版本'
+        required: true
+        default: '5.15.137'
+jobs:
+  compile:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 拉取OpenWrt源码
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt
+          ref: openwrt-22.03
+      - name: 安装编译依赖
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libncurses5-dev libgmp3-dev libssl-dev flex bison git wget curl
+      - name: 复制RK3128配置文件
+        run: |
+          mkdir -p configs/rockchip
+          echo '${{ env.ROCKCHIP_MK }}' > configs/rockchip/rockchip.mk
+          mkdir -p arch/arm/boot/dts
+          echo '${{ env.RK3128_DTS }}' > arch/arm/boot/dts/rk3128.dts
+      - name: 配置编译参数
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cp configs/rockchip/rockchip.mk .config
+          make defconfig
+      - name: 开始编译
+        run: |
+          make -j$(nproc) V=s
+      - name: 上传固件
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt-RK3128-Image
+          path: bin/targets/rockchip/armv7l/*.img
+env:
+  ROCKCHIP_MK: |
+    # RK3128 专属编译配置
+    ifeq ($(BOARD),rk3128)
+        TARGET_BOARD := rockchip
+        TARGET_SUBARCH := armv7l
+        TARGET_DEVICE := rk3128
+        DEVICE_DTS := rk3128
+        KERNEL_VERSION := 5.15.137
+        KERNEL_PATCHES := $(TOPDIR)/patches/rockchip/rk3128
+        PACKAGES := luci luci-app-opkg luci-theme-argon kmod-usb-ohci kmod-usb-storage kmod-nls-utf8
+    endif
+  RK3128_DTS: |
+    /dts-v1/;
+    #include "rk3128.dtsi"
+    / {
+        model = "TXCZ-RK3128-V3.1";
+        compatible = "txcz,rk3128-v31", "rockchip,rk3128";
+        memory@60000000 {
+            device_type = "memory";
+            reg = <0x60000000 0x10000000>;
+        };
+        aliases {
+            ethernet0 = &emac;
+            serial0 = &uart2;
+        };
+    };
+    &emac {
+        status = "okay";
+        phy-mode = "rmii";
+        phy-handle = <&phy0>;
+    };
+    &phy0 {
+        reg = <0>;
+        compatible = "ethernet-phy-ieee802.3-c22";
+    };
+    &uart2 {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart2_xfer>;
+    };
+    &usb0 {
+        status = "okay";
+        dr_mode = "host";
+    };

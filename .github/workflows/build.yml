@@ -18,7 +18,7 @@ jobs:
     - name: Set ccache
       run: echo "CCACHE_DIR=/home/runner/work/_temp/ccache" >>  $ GITHUB_ENV
 
-    - name: Clone Source
+    - name: Clone OpenWrt Source
       run: git clone --depth 1 -b openwrt-23.05 https://github.com/openwrt/openwrt.git source
 
     - name: Update Feeds
@@ -66,8 +66,8 @@ jobs:
 运行: |
 cd source/bin/targets/rockchip/armv7/ && tar -zcvf OpenWrt-RK3128-Printer-Server- $(date +%Y%m%d).tar.gz *.img*
 
-    - 名称上传固件
-: actions/upload-artifact@v4
+    - 名称: 上传固件
+使用: actions/upload-artifact@v4
 与:
-: OpenWrt-RK3128-固件
+名称: OpenWrt-RK3128-固件
 : source/bin/targets/rockchip/armv7/OpenWrt-RK3128-打印机服务器*.tar.gz

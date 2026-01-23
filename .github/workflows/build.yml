@@ -45,40 +45,4 @@ jobs:
         CONFIG_PACKAGE_cups-bjnp=y
         CONFIG_PACKAGE_cups=y
         CONFIG_PACKAGE_kmod-cupsusb=y
-        CONFIG_PACKAGE_kmod-usb-core=y
-        CONFIG_PACKAGE_kmod-usb-ohci=y
-        CONFIG_PACKAGE_kmod-usb2=y
-        CONFIG_PACKAGE_kmod-usb3=y
-        CONFIG_PACKAGE_kmod-fs-vfat=y
-        CONFIG_PACKAGE_kmod-nls-cp437=y
-        CONFIG_PACKAGE_kmod-nls-iso8859-1=y
-        CONFIG_PACKAGE_luci-app-cups=y
-        CONFIG_PACKAGE_luci-i18n-cups-zh-cn=y
-        CONFIG_PACKAGE_luci-proto-ppp=y
-        CONFIG_PACKAGE_ppp=y
-        CONFIG_PACKAGE_ppp-mod-pppoe=y
-        CONFIG_DEVEL_SHORT_COMMIT_ID=y
-        CONFIG_TARGET_IMAGES_GZIP=n
-        CONFIG_TARGET_IMAGES_PAD=n
-        CONFIG_PACKAGE_kmod-leds-gpio=y
-        CONFIG_PACKAGE_kmod-gpio-button-hotplug=y
-        EOF
-        
-    - name: Defconfig
-      run: |
-        cd source && make defconfig
-        
-    - name: Compile Firmware
-      run: |
-        cd source && make -j $ (nproc) DOWNLOAD_ROOT_DIR=/home/runner/work/ $ (basename  $ GITHUB_REPOSITORY)/downloads
-        
-    - name: Upload Firmware
-      uses: actions/upload-artifact@v4
-      with:
-        name: OpenWrt-RK3128-Firmware
-        path: |
-          source/bin/targets/rockchip/armv7/
-          !source/bin/targets/rockchip/armv7/packages
-          !source/bin/targets/rockchip/armv7/debug
-          !source/bin/targets/rockchip/armv7/profiles.json
-          !source/bin/targets/rockchip/armv7/Config-buildinfo
+        CONFIG_PACKAGE_kmod-usb

@@ -3,8 +3,7 @@ name: Build RK3128 Printer Server
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,37 +11,61 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
+
     - name: Initialize Environment
-      run: |
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android /opt/ghcup
-        sudo apt-get update -qq
-        sudo apt-get install -y build-essential libncurses-dev libssl-dev python3 python3-distutils perl tar wget curl ca-certificates git swig unzip
-        
-    - name: Clone OpenWrt Source
-      run: |
-        git clone --depth 1 -b openwrt-23.05 https://github.com/openwrt/openwrt.git source
-        cd source
-        
+      run: sudo apt-get update -qq && sudo apt-get install -y build-essential libncurses-dev zlib1g-dev gawk git libssl-dev wget unzip python3 tar ca-certificates
+
+    - name: Clone Source with Cache
+      run: git clone --depth 1 -b openwrt-23.05 https://github.com/openwrt/openwrt.git source
+
     - name: Update Feeds
-      run: |
-        cd source && ./scripts/feeds update -a
-        
+      run: cd source && ./scripts/feeds update -a
+
     - name: Install Packages
+      run: cd source && ./scripts/feeds install -a
+
+    - name: Generate .config
       run: |
-        cd source && ./scripts/feeds install -a
-        
-    - name: Create Custom Config
-      run: |
-        cd source && cat > .config << EOF
+        cd source
+        cat > .config << 'EOF'
         CONFIG_TARGET_rockchip=y
         CONFIG_TARGET_rockchip_armv7=y
         CONFIG_TARGET_rockchip_armv7_DEVICE_rk3128_tvbox=y
         CONFIG_TARGET_OPTIONS=y
-        CONFIG_TARGET_ROOTFS_PARTSIZE=128
-        CONFIG_PACKAGE_kmod-usb-printer=y
-        CONFIG_PACKAGE_usb-printer=y
-        CONFIG_PACKAGE_cups-bjnp=y
+        CONFIG_TARGET_ROOTFS_PARTSIZE=256
         CONFIG_PACKAGE_cups=y
+        CONFIG_PACKAGE_cups-bjnp=y
+        CONFIG_PACKAGE_cups-pdf=y
+        CONFIG_PACKAGE_kmod-usb-printer=y
         CONFIG_PACKAGE_kmod-cupsusb=y
-        CONFIG_PACKAGE_kmod-usb
+        CONFIG_PACKAGE_kmod-usb-core=y
+        CONFIG_PACKAGE_kmod-usb-ohci=y
+        CONFIG_PACKAGE_kmod-usb2=y
+        CONFIG_PACKAGE_luci-app-cups=y
+        CONFIG_PACKAGE_luci-i18n-cups-zh-cn=y
+        CONFIG_PACKAGE_luci-theme-argon=y
+        CONFIG_PACKAGE_luci-app-argon-config=y
+        CONFIG_DEVEL_SHORT_COMMIT_ID=y
+        CONFIG_TARGET_IMAGES_GZIP=y
+        CONFIG_TARGET_KERNEL_PARTSIZE=32
+        CONFIG_TARGET_ROOTFS_PARTSIZE=512
+        EOF
+
+    - name: 运行Defconfig
+: cd source && make defconfig
+
+    - 名称: 下载DL缓存
+运行: cd source && make download -j $(nproc)
+
+    - name: 开始编译
+运行: cd source && make -j $(nproc) || make -j1 V=sc
+
+    - name: 打包固件
+运行: |
+cd source/bin/targets/rockchip/armv7/ && tar -zcvf OpenWrt-RK3128-Printer-Server- $(date +%Y%m%d).tar.gz *.img*
+
+    - 名称: 上传固件
+: actions/upload-artifact@v4
+与:
+名称: OpenWrt-RK3128-固件
+路径: source/bin/targets/rockchip/armv7/OpenWrt-RK3128-打印机服务器*.tar.gz
